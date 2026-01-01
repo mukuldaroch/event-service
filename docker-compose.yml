@@ -1,0 +1,41 @@
+# version: "3.9"
+services:
+  # PostgreSQL database service
+  db:
+    image: postgres:latest
+    container_name: event-service
+    ports:
+      # Map host port 5434 to container port 5432 (PostgreSQL default)
+      - "5435:5432"
+    restart: always
+    environment:
+      POSTGRES_USER: postgres # Default PostgreSQL user
+      POSTGRES_PASSWORD: daroch # Password for the default user
+      POSTGRES_DB: event-service # Default database name
+    volumes:
+      # Persist database data so it’s not lost when container restarts
+      - pgdata:/var/lib/postgresql/data
+  # Adminer: Web-based database management tool for PostgreSQL
+  adminer:
+    image: adminer # Fixed typo ("admier" → "adminer")
+    restart: always
+    ports:
+      - "8888:8080" # Access Adminer at http://localhost:8888
+  # Keycloak: Identity and Access Management server
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    ports:
+      - "9090:8080" # Access Keycloak admin console at http://localhost:9090
+    environment:
+      KEYCLOAK_ADMIN: admin # Admin username
+      KEYCLOAK_ADMIN_PASSWORD: admin # Admin password
+    volumes:
+      # Persist Keycloak data
+      - keycloak-data:/opt/keycloak/data
+    command:
+      - start-dev # Run Keycloak in development mode
+      - --db=dev-file # Use dev-file DB (simpler for development)
+volumes:
+  pgdata: # Named volume for PostgreSQL
+  keycloak-data: # Named volume for Keycloak
+    driver: local

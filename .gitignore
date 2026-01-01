@@ -1,0 +1,146 @@
+ =====================
+ Maven & Build Files
+ =====================
+arget/
+.jar
+.war
+.ear
+.class
+.log
+.tmp
+.bak
+
+ =====================
+ Eclipse Files
+ =====================
+classpath
+project
+settings/
+factorypath
+
+ =====================
+ IntelliJ IDEA Files
+ =====================
+idea/
+.iml
+.iws
+ut/
+
+ =====================
+ OS Generated Files
+ =====================
+DS_Store
+humbs.db
+
+ =====================
+ Logs & Temp
+ =====================
+ogs/
+.log
+.swp
+.swo
+
+ =====================
+ Environment Files
+ =====================
+env
+env.local
+.properties.local
+
+ =====================
+ Backup Files
+ =====================
+~
+.backup
+.bak
+.old
+
+ =====================
+ Others
+ =====================
+mvn/wrapper/maven-wrapper.jar
+ackup.md
+rojectBrief.md
+otes.md
+# =====================
+# Maven & Build Files
+# =====================
+target/
+*.jar
+*.war
+*.ear
+*.class
+*.log
+*.tmp
+*.bak
+
+# =====================
+# Gradle & Build Files
+# =====================
+.gradle/
+build/
+bin/
+out/
+build/generated/
+build/tmp/
+
+# =====================
+# Eclipse Files
+# =====================
+.classpath
+.project
+.settings/
+.factorypath
+
+# =====================
+# IntelliJ IDEA Files
+# =====================
+.idea/
+*.iml
+*.iws
+out/
+
+# =====================
+# OS Generated Files
+# =====================
+.DS_Store
+Thumbs.db
+
+# =====================
+# Logs & Temp
+# =====================
+logs/
+*.log
+*.swp
+*.swo
+
+# =====================
+# Environment & Local Config
+# =====================
+.env
+.env.local
+*.properties.local
+bin/main/application-*.properties
+
+# =====================
+# Backup Files
+# =====================
+*~
+*.backup
+*.bak
+*.old
+
+# =====================
+# Docker
+# =====================
+*.pid
+docker-compose.override.yml
+
+# =====================
+# Others
+# =====================
+.mvn/wrapper/maven-wrapper.jar
+backup.md
+ProjectBrief.md
+notes.md
+curl.md
