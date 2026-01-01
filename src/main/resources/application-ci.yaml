@@ -2,11 +2,11 @@
 spring:
   #
   application:
-    name: tickets
+    name: event-service
   #
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5434/ticket
+    url: jdbc:postgresql://localhost:5435/event-service
     username: postgres
     password: daroch
   #
