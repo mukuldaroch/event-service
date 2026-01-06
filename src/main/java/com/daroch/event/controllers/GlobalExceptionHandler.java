@@ -1,6 +1,6 @@
 package com.daroch.event.controllers;
 
-import com.daroch.event.dtos.ErrorDto;
+import com.daroch.event.dto.ErrorDto;
 import com.daroch.event.exceptions.EventNotFoundException;
 import com.daroch.event.exceptions.EventUpdateException;
 import jakarta.validation.ConstraintViolationException;
