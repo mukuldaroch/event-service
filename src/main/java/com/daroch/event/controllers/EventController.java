@@ -3,8 +3,10 @@ package com.daroch.event.controllers;
 import com.daroch.event.domain.entities.Event;
 import com.daroch.event.dto.request.CreateEventRequest;
 import com.daroch.event.dto.response.CreateEventResponse;
+import com.daroch.event.dto.response.EventResponse;
 import com.daroch.event.mappers.EventMapper;
 import com.daroch.event.services.EventCommandService;
+import com.daroch.event.services.EventQueryService;
 import com.daroch.event.services.commands.CreateEventCommand;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -13,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
 
   private final EventMapper eventMapper;
+  private final EventQueryService eventQueryService;
   private final EventCommandService eventCommandService;
 
   /**
@@ -46,7 +51,7 @@ public class EventController {
       @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody CreateEventRequest EventRequest) {
 
     // Convert incoming DTO → internal model used by service
-    CreateEventCommand createEventCommand = eventMapper.fromDto(EventRequest);
+    CreateEventCommand createEventCommand = eventMapper.fromCreateEventRequestDto(EventRequest);
 
     // Extract organizer/user ID from JWT
     UUID userId = parseUserId(jwt);
@@ -55,23 +60,22 @@ public class EventController {
     Event createdEvent = eventCommandService.createEvent(userId, createEventCommand);
 
     // Convert the saved entity → response DTO for API response
-    CreateEventResponse createEventResponse = eventMapper.toDto(createdEvent);
+    CreateEventResponse createEventResponse = eventMapper.toCreateEventResponseDto(createdEvent);
 
     // Return 201 CREATED with the new event details
     return new ResponseEntity<>(createEventResponse, HttpStatus.CREATED);
   }
-  //
-  // /**
-  //  * GET /events Lists all events belonging to the authenticated organizer.
-  //  Supports pagination via
-  //  * Spring's Pageable.
-  //  *
-  //  * @param jwt JWT token containing user ID
-  //  * @param pageable Spring’s pagination and sorting abstraction
-  //  * @return 200 OK with paginated list of events
-  //  */
+
+  /**
+   * GET /events Lists all events belonging to the authenticated organizer. Supports pagination via
+   * Spring's Pageable.
+   *
+   * @param jwt JWT token containing user ID
+   * @param pageable Spring’s pagination and sorting abstraction
+   * @return 200 OK with paginated list of events
+   */
   // @GetMapping
-  // public ResponseEntity<Page<ListEventResponseDto>> listEvents(
+  // public ResponseEntity<Page<EventResponse>> listEvents(
   //     @AuthenticationPrincipal Jwt jwt, Pageable pageable) {
   //
   //   // Extract organizer ID from JWT
@@ -85,33 +89,31 @@ public class EventController {
   //   return
   //   ResponseEntity.ok(events.map(eventMapper::tolistEventResponseDto));
   // }
-  //
-  // /**
-  //  * GET /events/{eventId} Retrieves details of a specific event if it
-  //  belongs to the authenticated
-  //  * organizer.
-  //  *
-  //  * @param jwt JWT token containing organizer ID
-  //  * @param eventId ID of the event to fetch
-  //  * @return 200 OK with event details or 404 if not found
-  //  */
-  // @GetMapping("/{eventId}")
-  // public ResponseEntity<GetEventDetailsResponseDto> getEvent(
-  //     @AuthenticationPrincipal Jwt jwt, @PathVariable UUID eventId) {
-  //
-  //   UUID organizerId = parseUserId(jwt);
-  //
-  //   // Find the event for the given organizer
-  //   return eventQueryService
-  //       .getEventForOrganizer(organizerId, eventId)
-  //       .map(eventMapper::toGetEventDetailsResponseDto) // convert to DTO
-  //       if
-  //       // found
-  //       .map(ResponseEntity::ok) // wrap in 200 OK
-  //       .orElse(ResponseEntity.notFound().build()); // else return 404
-  //   // .build() means no body, only status + headers
-  // }
-  //
+
+  /**
+   * GET /events/{eventId} Retrieves details of a specific event if it belongs to the authenticated
+   * organizer.
+   *
+   * @param jwt JWT token containing organizer ID
+   * @param eventId ID of the event to fetch
+   * @return 200 OK with event details or 404 if not found
+   */
+  @GetMapping("/{eventId}")
+  public ResponseEntity<EventResponse> getEvent(
+      @AuthenticationPrincipal Jwt jwt, @PathVariable UUID eventId) {
+
+    UUID organizerId = parseUserId(jwt);
+
+    // Find the event for the given organizer
+    return eventQueryService
+        .getEventForOrganizer(organizerId, eventId)
+        .map(eventMapper::toEventResponseDto)
+        .map(ResponseEntity::ok) // wrap in 200 OK
+        .orElse(ResponseEntity.notFound().build()); // else return 404
+
+    // .build() means no body, only status + headers
+  }
+
   // /**
   //  * POST /events/{eventId} Updates an existing event and its ticket types.
   //  *
