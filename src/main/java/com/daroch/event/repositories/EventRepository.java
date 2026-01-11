@@ -13,31 +13,32 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, UUID> {
-  Page<Event> findByOrganizerId(UUID organiserId, Pageable pageable);
 
-  Optional<Event> findByIdAndOrganizerId(UUID eventId, UUID organizerId);
+  Page<Event> findByOrganizerId(UUID organizerId, Pageable pageable);
+
+  Optional<Event> findByEventIdAndOrganizerId(UUID eventId, UUID organizerId);
 
   Page<Event> findByStatus(EventStatusEnum eventStatusEnum, Pageable pageable);
 
   @Query(
       value =
           """
-          SELECT *
-          FROM events
-          WHERE status = 'PUBLISHED'
-            AND to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(venue, ''))
-                @@ plainto_tsquery('english', :searchTerm)
+            SELECT *
+            FROM events
+            WHERE status = 'PUBLISHED'
+              AND to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(venue, ''))
+                  @@ plainto_tsquery('english', :searchTerm)
           """,
       countQuery =
           """
-          SELECT count(*)
-          FROM events
-          WHERE status = 'PUBLISHED'
-            AND to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(venue, ''))
-                @@ plainto_tsquery('english', :searchTerm)
+            SELECT count(*)
+            FROM events
+            WHERE status = 'PUBLISHED'
+              AND to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(venue, ''))
+                  @@ plainto_tsquery('english', :searchTerm)
           """,
       nativeQuery = true)
   Page<Event> searchEvents(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-  Optional<Event> findByIdAndStatus(UUID eventId, EventStatusEnum status);
+  Optional<Event> findByEventIdAndStatus(UUID eventId, EventStatusEnum status);
 }

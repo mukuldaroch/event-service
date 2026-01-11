@@ -1,4 +1,4 @@
-package com.daroch.event.dtos;
+package com.daroch.event.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

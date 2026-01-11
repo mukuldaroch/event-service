@@ -16,12 +16,13 @@ public class UpdateEventCommand {
 
   private UUID id;
   private String name;
-  private LocalDateTime start;
-  private LocalDateTime end;
   private String venue;
+  private EventStatusEnum status;
+
+  private LocalDateTime eventStartDate;
+  private LocalDateTime eventEndDate;
   private LocalDateTime salesStartDate;
   private LocalDateTime salesEndDate;
-  private EventStatusEnum status;
 }
 // POST /events
 // {

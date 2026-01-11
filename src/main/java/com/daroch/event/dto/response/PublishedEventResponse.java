@@ -1,4 +1,4 @@
-package com.daroch.event.dtos.response;
+package com.daroch.event.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,9 +17,11 @@ import lombok.ToString;
 @NoArgsConstructor
 public class PublishedEventResponse {
 
-  private UUID id;
+  private UUID eventId;
   private String name;
-  private LocalDateTime start;
-  private LocalDateTime end;
   private String venue;
+  private String description;
+
+  private LocalDateTime eventStartDate;
+  private LocalDateTime eventEndDate;
 }

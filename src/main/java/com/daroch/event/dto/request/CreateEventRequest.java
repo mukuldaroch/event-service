@@ -1,22 +1,27 @@
-package com.daroch.event.services.commands;
+package com.daroch.event.dto.request;
 
 import com.daroch.event.domain.enums.EventStatusEnum;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-// @Data
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateEventCommand {
+public class CreateEventRequest {
 
+  @NotBlank(message = "Event name is required")
   private String name;
+
+  @NotBlank(message = "venue information are required")
   private String venue;
+
+  @NotNull(message = "Event status is required")
   private EventStatusEnum status;
+
 
   private LocalDateTime eventStartDate;
   private LocalDateTime eventEndDate;

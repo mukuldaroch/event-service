@@ -1,11 +1,10 @@
 package com.daroch.event.controllers;
 
 import com.daroch.event.domain.entities.Event;
-import com.daroch.event.dtos.request.CreateEventRequest;
-import com.daroch.event.dtos.response.CreateEventResponse;
+import com.daroch.event.dto.request.CreateEventRequest;
+import com.daroch.event.dto.response.CreateEventResponse;
 import com.daroch.event.mappers.EventMapper;
 import com.daroch.event.services.EventCommandService;
-import com.daroch.event.services.EventQueryService;
 import com.daroch.event.services.commands.CreateEventCommand;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -20,12 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(path = "/api/v1/events")
+@RequestMapping(path = "/events")
 @RequiredArgsConstructor
 public class EventController {
 
   private final EventMapper eventMapper;
-  private final EventQueryService eventQueryService;
   private final EventCommandService eventCommandService;
 
   /**
