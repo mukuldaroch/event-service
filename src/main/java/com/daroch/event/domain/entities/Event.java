@@ -30,9 +30,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class Event {
 
   @Id
-  @Column(name = "id", nullable = false, updatable = false)
+  @Column(name = "event_id", nullable = false, updatable = false)
   @GeneratedValue(strategy = GenerationType.UUID)
-  private UUID id;
+  private UUID eventId;
 
   @Column(name = "organizer_id", nullable = false)
   private UUID organizerId;
@@ -40,25 +40,25 @@ public class Event {
   @Column(name = "name", nullable = false, length = 255)
   private String name;
 
-  @Column(name = "start_time", nullable = false)
-  private LocalDateTime start;
-
-  @Column(name = "end_time", nullable = false)
-  private LocalDateTime end;
-
   @Column(name = "venue", nullable = false, length = 255)
   private String venue;
+
+  @Column(name = "status", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private EventStatusEnum status;
+
+  // -------------------------------------------------dates
+  @Column(name = "event_start_date", nullable = false)
+  private LocalDateTime eventStartDate;
+
+  @Column(name = "event_end_date", nullable = false)
+  private LocalDateTime eventEndDate;
 
   @Column(name = "sales_start_date")
   private LocalDateTime salesStartDate;
 
   @Column(name = "sales_end_date")
   private LocalDateTime salesEndDate;
-
-  @Column(name = "status", nullable = false)
-  @Enumerated(EnumType.STRING)
-  // for string representations to be stored in the database
-  private EventStatusEnum status;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false, nullable = false)
@@ -72,7 +72,7 @@ public class Event {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof Event)) return false;
-    return id != null && id.equals(((Event) o).id);
+    return eventId != null && eventId.equals(((Event) o).eventId);
   }
 
   @Override

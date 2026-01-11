@@ -26,7 +26,7 @@ public class EventQueryServiceImpl implements EventQueryService {
    */
   @Override
   public Optional<Event> getEventForOrganizer(UUID organizerId, UUID eventId) {
-    return eventRepository.findByIdAndOrganizerId(eventId, organizerId);
+    return eventRepository.findByEventIdAndOrganizerId(eventId, organizerId);
   }
 
   /**
@@ -80,6 +80,6 @@ public class EventQueryServiceImpl implements EventQueryService {
    */
   @Override
   public Optional<Event> getPublishedEvent(UUID eventId) {
-    return eventRepository.findByIdAndStatus(eventId, EventStatusEnum.PUBLISHED);
+    return eventRepository.findByEventIdAndStatus(eventId, EventStatusEnum.PUBLISHED);
   }
 }

@@ -38,16 +38,22 @@ public class EventCommandServiceImpl implements EventCommandService {
 
     // Map event-level details from the request
     eventToCreate.setName(eventCommand.getName());
-    eventToCreate.setStart(eventCommand.getStart());
-    eventToCreate.setEnd(eventCommand.getEnd());
+    eventToCreate.setStatus(eventCommand.getStatus());
     eventToCreate.setVenue(eventCommand.getVenue());
+    eventToCreate.setEventStartDate(eventCommand.getEventStartDate());
+    eventToCreate.setEventEndDate(eventCommand.getEventEndDate());
     eventToCreate.setSalesStartDate(eventCommand.getSalesStartDate());
     eventToCreate.setSalesEndDate(eventCommand.getSalesEndDate());
-    eventToCreate.setStatus(eventCommand.getStatus());
     eventToCreate.setOrganizerId(organizerId);
 
     // Save the event (cascades and saves ticket types automatically)
-    return eventRepository.save(eventToCreate);
+    Event saved = eventRepository.save(eventToCreate);
+
+    // adding the event id to the returnDildo
+    eventToCreate.setEventId(saved.getEventId());
+
+    // return this shit
+    return eventToCreate;
   }
 
   /**
@@ -80,7 +86,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     // 1️⃣ Fetch the existing event (must belong to the same organizer)
     Event existingEvent =
         eventRepository
-            .findByIdAndOrganizerId(eventId, organizerId)
+            .findByEventIdAndOrganizerId(eventId, organizerId)
             .orElseThrow(
                 () ->
                     new EventNotFoundException(
@@ -88,12 +94,12 @@ public class EventCommandServiceImpl implements EventCommandService {
 
     // Update base event info
     existingEvent.setName(eventCommand.getName());
-    existingEvent.setStart(eventCommand.getStart());
-    existingEvent.setEnd(eventCommand.getEnd());
     existingEvent.setVenue(eventCommand.getVenue());
+    existingEvent.setStatus(eventCommand.getStatus());
+    existingEvent.setEventStartDate(eventCommand.getSalesStartDate());
+    existingEvent.setEventEndDate(eventCommand.getEventEndDate());
     existingEvent.setSalesStartDate(eventCommand.getSalesStartDate());
     existingEvent.setSalesEndDate(eventCommand.getSalesEndDate());
-    existingEvent.setStatus(eventCommand.getStatus());
 
     // save the updated event (cascade saves ticket types)
     return eventRepository.save(existingEvent);
@@ -113,7 +119,7 @@ public class EventCommandServiceImpl implements EventCommandService {
    */
   @Override
   public void deleteEventForOrganizer(UUID organizerId, UUID eventId) {
-    Optional<Event> event = eventRepository.findByIdAndOrganizerId(eventId, organizerId);
+    Optional<Event> event = eventRepository.findByEventIdAndOrganizerId(eventId, organizerId);
 
     event.ifPresent(eventRepository::delete);
   }

@@ -16,14 +16,12 @@ public class CreateEventRequest {
   @NotBlank(message = "Event name is required")
   private String name;
 
-
   @NotBlank(message = "venue information are required")
   private String venue;
 
   @NotNull(message = "Event status is required")
   private EventStatusEnum status;
 
-  private String description;
 
   private LocalDateTime eventStartDate;
   private LocalDateTime eventEndDate;

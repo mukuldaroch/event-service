@@ -1,4 +1,4 @@
-package com.daroch.tickets.config;
+package com.daroch.event.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
