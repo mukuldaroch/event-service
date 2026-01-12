@@ -72,37 +72,43 @@ public class EventCommandServiceImpl implements EventCommandService {
    */
   @Override
   @Transactional
-  public Event updateEventForOrganizer(
-      UUID organizerId, UUID eventId, UpdateEventCommand eventCommand) {
+  public Event updateEventForOrganizer(UUID organizerId, UpdateEventCommand cmd) {
 
-    // Validation: request must contain matching IDs
-    if (null == eventCommand.getId()) {
+    if (cmd.getEventId() == null) {
       throw new EventUpdateException("Event ID cannot be null");
     }
-    if (!eventId.equals(eventCommand.getId())) {
-      throw new EventUpdateException("Cannot update the ID of an event");
-    }
 
-    // 1️⃣ Fetch the existing event (must belong to the same organizer)
-    Event existingEvent =
+    Event event =
         eventRepository
-            .findByEventIdAndOrganizerId(eventId, organizerId)
+            .findByEventIdAndOrganizerId(cmd.getEventId(), organizerId)
             .orElseThrow(
                 () ->
                     new EventNotFoundException(
-                        String.format("Event with id '%s' does not exist", eventId)));
+                        "Event with id '" + cmd.getEventId() + "' does not exist"));
 
-    // Update base event info
-    existingEvent.setName(eventCommand.getName());
-    existingEvent.setVenue(eventCommand.getVenue());
-    existingEvent.setStatus(eventCommand.getStatus());
-    existingEvent.setEventStartDate(eventCommand.getSalesStartDate());
-    existingEvent.setEventEndDate(eventCommand.getEventEndDate());
-    existingEvent.setSalesStartDate(eventCommand.getSalesStartDate());
-    existingEvent.setSalesEndDate(eventCommand.getSalesEndDate());
+    if (cmd.getName() != null) {
+      event.setName(cmd.getName());
+    }
+    if (cmd.getVenue() != null) {
+      event.setVenue(cmd.getVenue());
+    }
+    if (cmd.getStatus() != null) {
+      event.setStatus(cmd.getStatus());
+    }
+    if (cmd.getEventStartDate() != null) {
+      event.setEventStartDate(cmd.getEventStartDate());
+    }
+    if (cmd.getEventEndDate() != null) {
+      event.setEventEndDate(cmd.getEventEndDate());
+    }
+    if (cmd.getSalesStartDate() != null) {
+      event.setSalesStartDate(cmd.getSalesStartDate());
+    }
+    if (cmd.getSalesEndDate() != null) {
+      event.setSalesEndDate(cmd.getSalesEndDate());
+    }
 
-    // save the updated event (cascade saves ticket types)
-    return eventRepository.save(existingEvent);
+    return eventRepository.save(event);
   }
 
   /**
