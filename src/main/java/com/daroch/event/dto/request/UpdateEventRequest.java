@@ -1,7 +1,6 @@
 package com.daroch.event.dto.request;
 
 import com.daroch.event.domain.enums.EventStatusEnum;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,17 +13,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateEventRequest {
 
-  @NotNull(message = "Event Id is required")
   private UUID eventId;
-
   private String name;
   private String venue;
-  private String description;
   private EventStatusEnum status;
 
   private LocalDateTime eventStartDate;
   private LocalDateTime eventEndDate;
   private LocalDateTime salesStartDate;
   private LocalDateTime salesEndDate;
-
 }

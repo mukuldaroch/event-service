@@ -15,7 +15,6 @@ public class UpdateEventResponse {
   private UUID eventId;
   private String name;
   private String venue;
-  private String description;
   private EventStatusEnum status;
 
   private LocalDateTime eventStartDate;
@@ -24,4 +23,5 @@ public class UpdateEventResponse {
   private LocalDateTime salesEndDate;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+
 }
