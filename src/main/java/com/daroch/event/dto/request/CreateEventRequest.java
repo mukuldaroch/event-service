@@ -22,7 +22,6 @@ public class CreateEventRequest {
   @NotNull(message = "Event status is required")
   private EventStatusEnum status;
 
-
   private LocalDateTime eventStartDate;
   private LocalDateTime eventEndDate;
   private LocalDateTime salesStartDate;

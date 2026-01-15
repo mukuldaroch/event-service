@@ -35,7 +35,7 @@ public class Event {
   private UUID eventId;
 
   @Column(name = "organizer_id", nullable = false)
-  private UUID organizerId;
+  private UUID ;
 
   @Column(name = "name", nullable = false, length = 255)
   private String name;
