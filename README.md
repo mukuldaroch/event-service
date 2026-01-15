@@ -51,7 +51,7 @@ Public Events
 
 ---
 
-## 🧩 Tech Stack
+## Tech Stack
 
 - **Backend:** Spring Boot (Java 17+)
 - **Build Tool:** Gradle
@@ -61,7 +61,7 @@ Public Events
 
 ---
 
-# ⚙️ Running Locally
+## Running Locally
 
 Requirements:
 
@@ -108,7 +108,7 @@ git clone https://github.com/mukuldaroch/event-service.git
 cd event-service
 ```
 
-## 1)3️⃣Add auth.local to your hosts file
+### Add auth.local to your hosts file
 
 Keycloak is exposed using a custom hostname (`auth.local`).
 Add this to your system hosts file:
@@ -129,7 +129,7 @@ This allows:
 http://auth.local:8080
 ```
 
-## 2)4️⃣Start PostgreSQL and Docker network
+### Start PostgreSQL and Docker network
 
 Bring up the database and shared network:
 
@@ -142,7 +142,7 @@ This will create:
 - `event-database` (Postgres)
 - `event-mesh` (Docker network)
 
-## 3) Run Keycloak
+### Run Keycloak
 
 Start Keycloak inside the same Docker network:
 
@@ -235,13 +235,13 @@ Enabled: true
 
 ## 5) Run `bash run.sh` to build automatically or build manually by following these steps if you are not on linux
 
-## 1. Build the Spring Boot JAR
+### Build the Spring Boot JAR
 
 ```bash
 ./gradlew clean build
 ```
 
-## 2.7️⃣ Build and run the Event Service container
+### Build and run the Event Service container
 
 Remove any old container:
 
