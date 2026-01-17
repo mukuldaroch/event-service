@@ -59,8 +59,6 @@ Public Events
 - **Containerization:** Docker
 - **Deployment:** Dockerized microservice setup
 
----
-
 # ⚙️ Running Locally
 
 Requirements:
@@ -108,7 +106,7 @@ git clone https://github.com/mukuldaroch/event-service.git
 cd event-service
 ```
 
-## 1)3️⃣Add auth.local to your hosts file
+## 1. Add auth.local to your hosts file
 
 Keycloak is exposed using a custom hostname (`auth.local`).
 Add this to your system hosts file:
@@ -129,7 +127,7 @@ This allows:
 http://auth.local:8080
 ```
 
-## 2)4️⃣Start PostgreSQL and Docker network
+## 2. Start PostgreSQL and Docker network
 
 Bring up the database and shared network:
 
@@ -241,7 +239,7 @@ Enabled: true
 ./gradlew clean build
 ```
 
-## 2.7️⃣ Build and run the Event Service container
+## 2. Build and run the Event Service container
 
 Remove any old container:
 
@@ -286,8 +284,6 @@ After completing the setup, the following services will be running locally:
 | Event Service | `event-service`  | 8083                          | [http://localhost:8083](http://localhost:8083)   |
 | PostgreSQL    | `event-database` | 5432 (internal) / 5433 (host) | localhost:5433                                   |
 
----
-
 ## 📜 Viewing Logs
 
 View logs for any service using:
@@ -299,8 +295,6 @@ docker logs -f event-database
 ```
 
 `-f` streams logs live (like `tail -f`).
-
----
 
 ## 🗄️ Connecting to PostgreSQL
 
@@ -322,7 +316,7 @@ This lets you inspect tables, rows, and migrations in real time.
 
 ---
 
-# 🧱 Event-Service Project Structure
+# Event-Service Project Structure
 
 This service follows a **layered, domain-driven structure** optimized for microservices, Spring Boot, and long-term sanity.
 
@@ -335,9 +329,7 @@ The idea is simple:
 com.daroch.event
 ```
 
----
-
-### ⚙️ `config/`
+### `config/`
 
 Infrastructure lives here.
 
@@ -358,8 +350,6 @@ This folder wires the service to the outside world.
 
 - `securityconfig.md`
   Human-readable explanation of why the security setup exists and how it works.
-
----
 
 ### `domain/`
 
@@ -387,8 +377,6 @@ domain/
 This layer contains no controllers, no DTOs, no APIs.
 Only **business objects**.
 
----
-
 ### `dto/`
 
 The **wire format** of your API.
@@ -415,8 +403,6 @@ DTOs exist so your API does not leak database entities.
 Entities ≠ API contracts.
 DTOs protect your database from frontend stupidity and versioning hell.
 
----
-
 ## `mappers/`
 
 ```
@@ -431,8 +417,6 @@ Converts:
 
 So controllers never touch entities directly and services never touch API objects.
 
----
-
 ## `repositories/`
 
 ```
@@ -441,8 +425,6 @@ repositories/
 ```
 
 Spring Data JPA interface.
-
----
 
 ## `services/`
 
@@ -468,8 +450,6 @@ This follows **CQRS** (Command Query Responsibility Segregation):
 - **Query Services** → read state
   (get event, list events)
 
----
-
 ## `exceptions/`
 
 ```
@@ -483,8 +463,6 @@ These are domain-level failures.
 
 Controllers never throw `RuntimeException` or `NullPointerException`.
 They throw **meaningful business errors** that get mapped to HTTP responses.
-
----
 
 ### `resources/`
 
@@ -506,8 +484,6 @@ This allows the same code to run:
 - locally
 - in Docker
 - in production
-
----
 
 ### `controllers/`
 
@@ -537,8 +513,6 @@ controllers/
 
 - `GlobalExceptionHandler`
   Converts internal exceptions into clean HTTP error responses.
-
----
 
 ## Final Architecture
 
