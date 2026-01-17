@@ -15,7 +15,6 @@ public class CreateEventResponse {
   private UUID eventId;
   private String name;
   private String venue;
-  private String description;
   private EventStatusEnum status;
 
   private LocalDateTime eventStartDate;

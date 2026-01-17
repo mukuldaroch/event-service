@@ -8,7 +8,6 @@ events
 id (UUID, PK)
 organizer_id (UUID)           -- from JWT (Keycloak)
 title (VARCHAR)
-description (TEXT)
 status (VARCHAR)              -- DRAFT, PUBLISHED, CANCELLED
 start_time (TIMESTAMP)
 end_time (TIMESTAMP)
