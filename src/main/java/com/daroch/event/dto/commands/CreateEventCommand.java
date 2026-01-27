@@ -1,18 +1,18 @@
-package com.daroch.event.services.commands;
+package com.daroch.event.dto.commands;
 
 import com.daroch.event.domain.enums.EventStatusEnum;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateEventCommand {
+public class CreateEventCommand {
 
-  private UUID eventId;
   private String name;
   private String venue;
   private EventStatusEnum status;

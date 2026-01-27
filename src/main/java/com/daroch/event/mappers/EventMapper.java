@@ -5,8 +5,8 @@ import com.daroch.event.dto.request.CreateEventRequest;
 import com.daroch.event.dto.request.UpdateEventRequest;
 import com.daroch.event.dto.response.CreateEventResponse;
 import com.daroch.event.dto.response.EventResponse;
-import com.daroch.event.services.commands.CreateEventCommand;
-import com.daroch.event.services.commands.UpdateEventCommand;
+import com.daroch.event.dto.commands.CreateEventCommand;
+import com.daroch.event.dto.commands.UpdateEventCommand;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
