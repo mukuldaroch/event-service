@@ -1,4 +1,4 @@
-name: Java CI Event Service
+name: Java CI For Event Service
 on:
   push:
     branches:
@@ -19,13 +19,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-      - name: Configure Gradle timeouts
-        run: |
-          mkdir -p ~/.gradle
-          echo "systemProp.org.gradle.internal.http.connectionTimeout=60000" >> ~/.gradle/gradle.properties
-          echo "systemProp.org.gradle.internal.http.socketTimeout=60000" >> ~/.gradle/gradle.properties
+      - name: Wait for Postgres to be ready
+        run: sleep 5
       - name: Build & Test with Gradle
-        run: ./gradlew clean build --no-daemon
+        run: ./gradlew clean build
