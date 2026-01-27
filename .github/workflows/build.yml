@@ -1,4 +1,4 @@
-name: Java CI Event Service
+name: Java CI For Event Service
 on:
   push:
     branches:
@@ -20,6 +20,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Wait for Postgres to be ready
-        run: sleep 10
+        run: sleep 5
       - name: Build & Test with Gradle
         run: ./gradlew clean build
