@@ -7,7 +7,6 @@
 | String          | name           |
 | String          | venue          |
 | EventStatusEnum | status         |
-| String          | description    |
 | LocalDateTime   | eventStartDate |
 | LocalDateTime   | eventEndDate   |
 | LocalDateTime   | salesStartDate |
@@ -20,7 +19,6 @@
 | UUID            | eventId        |
 | String          | name           |
 | String          | venue          |
-| String          | description    |
 | EventStatusEnum | status         |
 | LocalDateTime   | eventStartDate |
 | LocalDateTime   | eventEndDate   |
@@ -36,7 +34,6 @@
 | UUID            | eventId        |
 | String          | name           |
 | String          | venue          |
-| String          | description    |
 | EventStatusEnum | status         |
 | LocalDateTime   | eventStartDate |
 | LocalDateTime   | eventEndDate   |
@@ -52,7 +49,6 @@
 | UUID            | eventId        |
 | String          | name           |
 | String          | venue          |
-| String          | description    |
 | EventStatusEnum | status         |
 | LocalDateTime   | eventStartDate |
 | LocalDateTime   | eventEndDate   |
@@ -68,7 +64,6 @@
 | UUID          | eventId        |
 | String        | name           |
 | String        | venue          |
-| String        | description    |
 | LocalDateTime | eventStartDate |
 | LocalDateTime | eventEndDate   |
 
@@ -79,7 +74,6 @@
 | UUID            | eventId        |
 | String          | name           |
 | String          | venue          |
-| String          | description    |
 | EventStatusEnum | status         |
 | LocalDateTime   | eventStartDate |
 | LocalDateTime   | eventEndDate   |

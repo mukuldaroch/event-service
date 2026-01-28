@@ -20,7 +20,6 @@ public class PublishedEventResponse {
   private UUID eventId;
   private String name;
   private String venue;
-  private String description;
 
   private LocalDateTime eventStartDate;
   private LocalDateTime eventEndDate;

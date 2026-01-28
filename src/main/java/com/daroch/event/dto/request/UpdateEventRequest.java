@@ -1,7 +1,6 @@
 package com.daroch.event.dto.request;
 
 import com.daroch.event.domain.enums.EventStatusEnum;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;

@@ -64,6 +64,7 @@ public class EventQueryServiceImpl implements EventQueryService {
    * @param pageable pagination details for the result list
    * @return a paginated list of search results within published events
    */
+
   // TODO: implement serch throught the published events
   // @Override
   // public Page<Event> searchPublishedEvents(String query, Pageable pageable) {

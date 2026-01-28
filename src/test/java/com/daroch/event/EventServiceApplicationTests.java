@@ -1,9 +1,13 @@
 package com.daroch.event;
 
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-// @SpringBootTest
+@SpringBootTest
+@ActiveProfiles("dev")
 class EventServiceApplicationTests {
 
-  // @Test
+  @Test
   void contextLoads() {}
 }
