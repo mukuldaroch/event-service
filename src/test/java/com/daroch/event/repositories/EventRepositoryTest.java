@@ -3,8 +3,10 @@ package com.daroch.event.repositories;
 import com.daroch.event.domain.entities.Event;
 import com.daroch.event.domain.enums.EventStatusEnum;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
@@ -17,44 +19,64 @@ import org.springframework.data.domain.Pageable;
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 public class EventRepositoryTest {
+
+  // private Event createEvent(UUID organizerId, EventStatusEnum status) {
+  //   Event event = new Event();
+  //   event.setOrganizerId(organizerId);
+  //   event.setName("Desi Laudai");
+  //   event.setVenue("Naughty Ghaziabad");
+  //   event.setStatus(status);
+  //   event.setEventStartDate(LocalDateTime.of(1000, 1, 1, 1, 1));
+  //   event.setEventEndDate(LocalDateTime.of(1000, 1, 1, 1, 1));
+  //   return event;
+  // }
+
+  // Injects the real JPA repository backed by H2 (not mocks)
   @Autowired private EventRepository eventRepository;
 
-  @Test
-  public void EventRepository_save_ReturnSavedEvents() {
-    // Arrange
-    var event = new Event();
+  // This will be reused in every test
+  private Event event;
 
+  /** Runs BEFORE EACH @Test method Creates a fresh Event object so tests remain isolated */
+  @BeforeEach
+  void setup() {
+    event = new Event();
+
+    // Setting required fields
     event.setOrganizerId(UUID.randomUUID());
     event.setName("Desi Laudai");
     event.setVenue("Naughty Ghaziabad");
     event.setStatus(EventStatusEnum.DRAFT);
+
+    // Using very old dates to avoid "future date" constraints if any exist
     event.setEventStartDate(LocalDateTime.of(1000, 1, 1, 1, 1));
     event.setEventEndDate(LocalDateTime.of(1000, 1, 1, 1, 1));
+  }
 
-    // Act
+  /**
+   * Verifies that saving an Event persists it and auto-populated fields (like createdAt) are set
+   */
+  @Test
+  void EventRepository_save_ReturnSavedEvents() {
+
+    // Act: save entity and force DB write immediately
     Event savedEvent = eventRepository.saveAndFlush(event);
-    // Assert
+
+    // Assert: entity exists and auditing fields are populated
     Assertions.assertThat(savedEvent).isNotNull();
     Assertions.assertThat(savedEvent.getCreatedAt()).isNotNull();
   }
 
+  /** Verifies custom finder method: findByOrganizerId */
   @Test
-  public void EventRepository_findByOrganizerId_ReturnSavedEvents() {
+  void EventRepository_findByOrganizerId_ReturnSavedEvents() {
 
     // Arrange
-    var event = new Event();
-    event.setOrganizerId(UUID.randomUUID());
-    event.setName("Desi Laudai");
-    event.setVenue("Naughty Ghaziabad");
-    event.setStatus(EventStatusEnum.DRAFT);
-    event.setEventStartDate(LocalDateTime.of(1000, 1, 1, 1, 1));
-    event.setEventEndDate(LocalDateTime.of(1000, 1, 1, 1, 1));
+    Event savedEvent = eventRepository.save(event);
+    eventRepository.flush(); // ensures SQL execution
 
     // Act
     Pageable pageable = PageRequest.of(0, 10);
-    Event savedEvent = eventRepository.save(event);
-    eventRepository.flush();
-
     Page<Event> fetchedEvents = eventRepository.findByOrganizerId(event.getOrganizerId(), pageable);
 
     // Assert
@@ -63,25 +85,37 @@ public class EventRepositoryTest {
         .isEqualTo(savedEvent.getOrganizerId());
   }
 
+  /** Verifies custom finder method: findByStatus */
   @Test
-  public void EventRepository_findByStatus_ReturnSavedEvents() {
-    // Arrange
-    var event = new Event();
-    event.setOrganizerId(UUID.randomUUID());
-    event.setName("Desi Laudai");
-    event.setVenue("Naughty Ghaziabad");
-    event.setStatus(EventStatusEnum.DRAFT);
-    event.setEventStartDate(LocalDateTime.of(1000, 1, 1, 1, 1));
-    event.setEventEndDate(LocalDateTime.of(1000, 1, 1, 1, 1));
-    // Act
+  void EventRepository_findByStatus_ReturnSavedEvents() {
 
-    Event SavedEvent = eventRepository.save(event);
+    // Arrange
+    Event savedEvent = eventRepository.save(event);
     eventRepository.flush();
 
-    // Assert
+    // Act
     Pageable pageable = PageRequest.of(0, 10);
     Page<Event> fetchedEvents = eventRepository.findByStatus(EventStatusEnum.DRAFT, pageable);
+
+    // Assert
+    Assertions.assertThat(fetchedEvents.getContent()).hasSize(1);
+
     Assertions.assertThat(fetchedEvents.getContent().get(0).getStatus())
-        .isEqualTo(SavedEvent.getStatus());
+        .isEqualTo(savedEvent.getStatus());
+  }
+
+  /** Verifies custom finder method: findByStatus */
+  @Test
+  void EventRepository_findByEventIdAndStatus_ReturnSavedEvents() {
+    // Arrange
+    Event savedEvent = eventRepository.save(event);
+    eventRepository.flush();
+
+    // Act
+    Optional<Event> fetchedEvent =
+        eventRepository.findByEventIdAndStatus(savedEvent.getEventId(), savedEvent.getStatus());
+
+    // Assert
+    Assertions.assertThat(fetchedEvent).isPresent();
   }
 }

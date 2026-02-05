@@ -1,11 +1,17 @@
 package com.daroch.event.services.impl;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.daroch.event.domain.entities.Event;
+import com.daroch.event.domain.enums.EventStatusEnum;
 import com.daroch.event.dto.commands.CreateEventCommand;
 import com.daroch.event.dto.commands.UpdateEventCommand;
+import com.daroch.event.exceptions.EventNotFoundException;
+import com.daroch.event.exceptions.EventUpdateException;
 import com.daroch.event.repositories.EventRepository;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -15,43 +21,52 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 @ExtendWith(MockitoExtension.class)
 class EventCommandServiceImplTest {
 
-  @Mock private EventRepository eventRepository;
+  // Helper to create a reusable Event instance for tests
+  private Event createEvent() {
+    Event event = new Event();
+    event.setOrganizerId(UUID.randomUUID());
+    event.setName("Desi Laudai");
+    event.setVenue("Naughty Ghaziabad");
+    event.setStatus(EventStatusEnum.PUBLISHED);
+    return event;
+  }
 
-  @InjectMocks private EventCommandServiceImpl eventCommandService;
+  @Mock
+  private EventRepository eventRepository;
+
+  @InjectMocks
+  private EventCommandServiceImpl eventCommandService;
 
   @Test
-  void createEvent_whenValidCommand_shouldSaveMappedEvent() {
+  void eventCommandService_createEvent_shouldSaveMappedEvent() {
 
-    // Arrange
-    UUID organizerId = UUID.randomUUID();
-
+    // Arrange: input command
     CreateEventCommand command = new CreateEventCommand();
+    UUID organizerId = UUID.randomUUID();
     command.setName("Desi laudai");
     command.setVenue("Naughty Ghaziabad");
 
-    Event persistedEvent = new Event();
-    persistedEvent.setEventId(UUID.randomUUID());
+    // Arrange: repository save result (simulating DB-generated data)
+    Event persistedEvent = createEvent();
 
-    Mockito.when(eventRepository.save(Mockito.any(Event.class))).thenReturn(persistedEvent);
+    Mockito.when(eventRepository.save(Mockito.any(Event.class)))
+        .thenReturn(persistedEvent);
 
     // Act
     Event result = eventCommandService.createEvent(organizerId, command);
 
-    // Assert (returned object)
+    // Assert: returned object reflects mapped input + generated ID
     assertAll(
         () -> Assertions.assertEquals("Desi laudai", result.getName()),
         () -> Assertions.assertEquals("Naughty Ghaziabad", result.getVenue()),
         () -> Assertions.assertEquals(organizerId, result.getOrganizerId()),
         () -> Assertions.assertEquals(persistedEvent.getEventId(), result.getEventId()));
 
-    // Assert (interaction + intent)
+    // Assert: verify what the service attempted to persist
     ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
     Mockito.verify(eventRepository).save(captor.capture());
 
@@ -64,18 +79,89 @@ class EventCommandServiceImplTest {
   }
 
   @Test
-  void updateEvent_whenValidCommand_shouldUpdateMappedEvent() {
+  void updateEvent_whenEventIdIsNull_shouldThrowException() {
+
     // Arrange
+    UpdateEventCommand cmd = new UpdateEventCommand();
     UUID organizerId = UUID.randomUUID();
 
-    UpdateEventCommand command = new UpdateEventCommand();
+    // Act + Assert
+    assertThrows(
+        EventUpdateException.class,
+        () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
 
-    command.setName("Pardesi laudai");
-    command.setVenue("Naughty America");
+    // Repository must not be touched on validation failure
+    Mockito.verifyNoInteractions(eventRepository);
+  }
 
-    Event persistedEvent = new Event();
-    persistedEvent.setEventId(UUID.randomUUID());
+  @Test
+  void updateEvent_whenEventNotFound_shouldThrowException() {
 
+    // Arrange
+    UUID organizerId = UUID.randomUUID();
+    UUID eventId = UUID.randomUUID();
+
+    UpdateEventCommand cmd = new UpdateEventCommand();
+    cmd.setEventId(eventId);
+
+    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+        .thenReturn(Optional.empty());
+
+    // Act + Assert
+    assertThrows(
+        EventNotFoundException.class,
+        () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
+
+    // Ensure no save attempt is made
+    Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
+    Mockito.verify(eventRepository, Mockito.never()).save(Mockito.any());
+  }
+
+  @Test
+  void updateEvent_shouldUpdateOnlyNonNullFields() {
+
+    // Arrange: existing persisted event
+    UUID organizerId = UUID.randomUUID();
+    UUID eventId = UUID.randomUUID();
+
+    Event existingEvent = new Event();
+    existingEvent.setEventId(eventId);
+    existingEvent.setName("Old Name");
+    existingEvent.setVenue("Old Venue");
+    existingEvent.setStatus(EventStatusEnum.DRAFT);
+
+    UpdateEventCommand cmd = new UpdateEventCommand();
+    cmd.setEventId(eventId);
+    cmd.setName("New Name");          // should update
+    cmd.setVenue(null);               // should remain unchanged
+    cmd.setStatus(EventStatusEnum.PUBLISHED);
+
+    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+        .thenReturn(Optional.of(existingEvent));
+
+    // Simulate JPA behavior: save returns the same mutated entity
+    Mockito.when(eventRepository.save(Mockito.any(Event.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Act
+    Event result =
+        eventCommandService.updateEventForOrganizer(organizerId, cmd);
+
+    // Assert: returned entity reflects selective updates
+    assertAll(
+        () -> Assertions.assertEquals("New Name", result.getName()),
+        () -> Assertions.assertEquals("Old Venue", result.getVenue()),
+        () -> Assertions.assertEquals(EventStatusEnum.PUBLISHED, result.getStatus()));
+
+    // Assert: persisted intent
+    ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+    Mockito.verify(eventRepository).save(captor.capture());
+
+    Event saved = captor.getValue();
+
+    assertAll(
+        () -> Assertions.assertEquals("New Name", saved.getName()),
+        () -> Assertions.assertEquals("Old Venue", saved.getVenue()));
   }
 }
 
