@@ -10,7 +10,6 @@ import com.daroch.event.dto.commands.UpdateEventCommand;
 import com.daroch.event.exceptions.EventNotFoundException;
 import com.daroch.event.exceptions.EventUpdateException;
 import com.daroch.event.repositories.EventRepository;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
@@ -35,11 +34,9 @@ class EventCommandServiceImplTest {
     return event;
   }
 
-  @Mock
-  private EventRepository eventRepository;
+  @Mock private EventRepository eventRepository;
 
-  @InjectMocks
-  private EventCommandServiceImpl eventCommandService;
+  @InjectMocks private EventCommandServiceImpl eventCommandService;
 
   @Test
   void eventCommandService_createEvent_shouldSaveMappedEvent() {
@@ -53,8 +50,7 @@ class EventCommandServiceImplTest {
     // Arrange: repository save result (simulating DB-generated data)
     Event persistedEvent = createEvent();
 
-    Mockito.when(eventRepository.save(Mockito.any(Event.class)))
-        .thenReturn(persistedEvent);
+    Mockito.when(eventRepository.save(Mockito.any(Event.class))).thenReturn(persistedEvent);
 
     // Act
     Event result = eventCommandService.createEvent(organizerId, command);
@@ -132,8 +128,8 @@ class EventCommandServiceImplTest {
 
     UpdateEventCommand cmd = new UpdateEventCommand();
     cmd.setEventId(eventId);
-    cmd.setName("New Name");          // should update
-    cmd.setVenue(null);               // should remain unchanged
+    cmd.setName("New Name"); // should update
+    cmd.setVenue(null); // should remain unchanged
     cmd.setStatus(EventStatusEnum.PUBLISHED);
 
     Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
@@ -144,8 +140,7 @@ class EventCommandServiceImplTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // Act
-    Event result =
-        eventCommandService.updateEventForOrganizer(organizerId, cmd);
+    Event result = eventCommandService.updateEventForOrganizer(organizerId, cmd);
 
     // Assert: returned entity reflects selective updates
     assertAll(
@@ -163,11 +158,46 @@ class EventCommandServiceImplTest {
         () -> Assertions.assertEquals("New Name", saved.getName()),
         () -> Assertions.assertEquals("Old Venue", saved.getVenue()));
   }
+
+  @Test
+  void deleteEventForOrganizer_whenEventExists_shouldDeleteEvent() {
+
+    // Arrange: identifiers and existing event
+    UUID organizerId = UUID.randomUUID();
+    UUID eventId = UUID.randomUUID();
+
+    Event existingEvent = new Event();
+    existingEvent.setEventId(eventId);
+    existingEvent.setOrganizerId(organizerId);
+
+    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+        .thenReturn(Optional.of(existingEvent));
+
+    // Act
+    eventCommandService.deleteEventForOrganizer(organizerId, eventId);
+
+    // Assert: lookup and delete are performed
+    Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
+    Mockito.verify(eventRepository).delete(existingEvent);
+  }
+
+  @Test
+  void deleteEventForOrganizer_whenEventDoesNotExist_shouldDoNothing() {
+
+    // Arrange: no event found for given identifiers
+    UUID organizerId = UUID.randomUUID();
+    UUID eventId = UUID.randomUUID();
+
+    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+        .thenReturn(Optional.empty());
+
+    // Act
+    eventCommandService.deleteEventForOrganizer(organizerId, eventId);
+
+    // Assert: lookup happens but delete is not attempted
+    Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
+    Mockito.verify(eventRepository, Mockito.never()).delete(Mockito.any());
+  }
 }
 
-/*
-// * I tested the service’s contract.
-// * I verifed the persisted entity using an ArgumentCaptor and only assert
-fields owned by this service.
-// * I avoid Spring context because this is a pure unit test.
-*/
+
