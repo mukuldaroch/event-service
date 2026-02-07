@@ -13,6 +13,8 @@ import com.daroch.event.repositories.EventRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -24,180 +26,197 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EventCommandServiceImplTest {
 
-  // Helper to create a reusable Event instance for tests
-  private Event createEvent() {
-    Event event = new Event();
-    event.setOrganizerId(UUID.randomUUID());
-    event.setName("Desi Laudai");
-    event.setVenue("Naughty Ghaziabad");
-    event.setStatus(EventStatusEnum.PUBLISHED);
-    return event;
+  @Nested
+  @DisplayName("Create Event")
+  public class createEventTest {
+
+    @Mock private EventRepository eventRepository;
+
+    @InjectMocks private EventCommandServiceImpl eventCommandService;
+
+    // Helper to create a reusable Event instance for tests
+    private Event createEvent() {
+      Event event = new Event();
+      event.setOrganizerId(UUID.randomUUID());
+      event.setName("Desi Laudai");
+      event.setVenue("Naughty Ghaziabad");
+      event.setStatus(EventStatusEnum.PUBLISHED);
+      return event;
+    }
+
+    @Test
+    @DisplayName("Should map request fields and persist event")
+    void createEvent_success() {
+
+      // Arrange: input command
+      CreateEventCommand command = new CreateEventCommand();
+      UUID organizerId = UUID.randomUUID();
+      command.setName("Desi laudai");
+      command.setVenue("Naughty Ghaziabad");
+
+      // Arrange: repository save result (simulating DB-generated data)
+      Event persistedEvent = createEvent();
+
+      Mockito.when(eventRepository.save(Mockito.any(Event.class))).thenReturn(persistedEvent);
+
+      // Act
+      Event result = eventCommandService.createEvent(organizerId, command);
+
+      // Assert: returned object reflects mapped input + generated ID
+      assertAll(
+          () -> Assertions.assertEquals("Desi laudai", result.getName()),
+          () -> Assertions.assertEquals("Naughty Ghaziabad", result.getVenue()),
+          () -> Assertions.assertEquals(organizerId, result.getOrganizerId()),
+          () -> Assertions.assertEquals(persistedEvent.getEventId(), result.getEventId()));
+
+      // Assert: verify what the service attempted to persist
+      ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+      Mockito.verify(eventRepository).save(captor.capture());
+
+      Event saved = captor.getValue();
+
+      assertAll(
+          () -> Assertions.assertEquals("Desi laudai", saved.getName()),
+          () -> Assertions.assertEquals("Naughty Ghaziabad", saved.getVenue()),
+          () -> Assertions.assertEquals(organizerId, saved.getOrganizerId()));
+    }
   }
 
-  @Mock private EventRepository eventRepository;
+  @Nested
+  @DisplayName("Update Event")
+  class UpdateEventTests {
 
-  @InjectMocks private EventCommandServiceImpl eventCommandService;
+    @Mock private EventRepository eventRepository;
 
-  @Test
-  void eventCommandService_createEvent_shouldSaveMappedEvent() {
+    @InjectMocks private EventCommandServiceImpl eventCommandService;
 
-    // Arrange: input command
-    CreateEventCommand command = new CreateEventCommand();
-    UUID organizerId = UUID.randomUUID();
-    command.setName("Desi laudai");
-    command.setVenue("Naughty Ghaziabad");
+    @Test
+    @DisplayName("Should throw exception when event ID is null")
+    void updateEvent_nullEventId_throwsException() {
 
-    // Arrange: repository save result (simulating DB-generated data)
-    Event persistedEvent = createEvent();
+      // Arrange
+      UpdateEventCommand cmd = new UpdateEventCommand();
+      UUID organizerId = UUID.randomUUID();
 
-    Mockito.when(eventRepository.save(Mockito.any(Event.class))).thenReturn(persistedEvent);
+      // Act + Assert
+      assertThrows(
+          EventUpdateException.class,
+          () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
 
-    // Act
-    Event result = eventCommandService.createEvent(organizerId, command);
+      // Repository must not be touched on validation failure
+      Mockito.verifyNoInteractions(eventRepository);
+    }
 
-    // Assert: returned object reflects mapped input + generated ID
-    assertAll(
-        () -> Assertions.assertEquals("Desi laudai", result.getName()),
-        () -> Assertions.assertEquals("Naughty Ghaziabad", result.getVenue()),
-        () -> Assertions.assertEquals(organizerId, result.getOrganizerId()),
-        () -> Assertions.assertEquals(persistedEvent.getEventId(), result.getEventId()));
+    @Test
+    @DisplayName("Should throw exception when event does not exist")
+    void updateEvent_eventNotFound_throwsException() {
 
-    // Assert: verify what the service attempted to persist
-    ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
-    Mockito.verify(eventRepository).save(captor.capture());
+      // Arrange
+      UUID organizerId = UUID.randomUUID();
+      UUID eventId = UUID.randomUUID();
 
-    Event saved = captor.getValue();
+      UpdateEventCommand cmd = new UpdateEventCommand();
+      cmd.setEventId(eventId);
 
-    assertAll(
-        () -> Assertions.assertEquals("Desi laudai", saved.getName()),
-        () -> Assertions.assertEquals("Naughty Ghaziabad", saved.getVenue()),
-        () -> Assertions.assertEquals(organizerId, saved.getOrganizerId()));
-  }
+      Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+          .thenReturn(Optional.empty());
 
-  @Test
-  void updateEvent_whenEventIdIsNull_shouldThrowException() {
+      // Act + Assert
+      assertThrows(
+          EventNotFoundException.class,
+          () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
 
-    // Arrange
-    UpdateEventCommand cmd = new UpdateEventCommand();
-    UUID organizerId = UUID.randomUUID();
+      // Ensure no save attempt is made
+      Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
+      Mockito.verify(eventRepository, Mockito.never()).save(Mockito.any());
+    }
 
-    // Act + Assert
-    assertThrows(
-        EventUpdateException.class,
-        () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
+    @Test
+    @DisplayName("Should update only non-null fields")
+    void updateEvent_partialUpdate_success() {
 
-    // Repository must not be touched on validation failure
-    Mockito.verifyNoInteractions(eventRepository);
-  }
+      // Arrange: existing persisted event
+      UUID organizerId = UUID.randomUUID();
+      UUID eventId = UUID.randomUUID();
 
-  @Test
-  void updateEvent_whenEventNotFound_shouldThrowException() {
+      Event existingEvent = new Event();
+      existingEvent.setEventId(eventId);
+      existingEvent.setName("Old Name");
+      existingEvent.setVenue("Old Venue");
+      existingEvent.setStatus(EventStatusEnum.DRAFT);
 
-    // Arrange
-    UUID organizerId = UUID.randomUUID();
-    UUID eventId = UUID.randomUUID();
+      UpdateEventCommand cmd = new UpdateEventCommand();
+      cmd.setEventId(eventId);
+      cmd.setName("New Name"); // should update
+      cmd.setVenue(null); // should remain unchanged
+      cmd.setStatus(EventStatusEnum.PUBLISHED);
 
-    UpdateEventCommand cmd = new UpdateEventCommand();
-    cmd.setEventId(eventId);
+      Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+          .thenReturn(Optional.of(existingEvent));
 
-    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
-        .thenReturn(Optional.empty());
+      // Simulate JPA behavior: save returns the same mutated entity
+      Mockito.when(eventRepository.save(Mockito.any(Event.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
 
-    // Act + Assert
-    assertThrows(
-        EventNotFoundException.class,
-        () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
+      // Act
+      Event result = eventCommandService.updateEventForOrganizer(organizerId, cmd);
 
-    // Ensure no save attempt is made
-    Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
-    Mockito.verify(eventRepository, Mockito.never()).save(Mockito.any());
-  }
+      // Assert: returned entity reflects selective updates
+      assertAll(
+          () -> Assertions.assertEquals("New Name", result.getName()),
+          () -> Assertions.assertEquals("Old Venue", result.getVenue()),
+          () -> Assertions.assertEquals(EventStatusEnum.PUBLISHED, result.getStatus()));
 
-  @Test
-  void updateEvent_shouldUpdateOnlyNonNullFields() {
+      // Assert: persisted intent
+      ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+      Mockito.verify(eventRepository).save(captor.capture());
 
-    // Arrange: existing persisted event
-    UUID organizerId = UUID.randomUUID();
-    UUID eventId = UUID.randomUUID();
+      Event saved = captor.getValue();
 
-    Event existingEvent = new Event();
-    existingEvent.setEventId(eventId);
-    existingEvent.setName("Old Name");
-    existingEvent.setVenue("Old Venue");
-    existingEvent.setStatus(EventStatusEnum.DRAFT);
+      assertAll(
+          () -> Assertions.assertEquals("New Name", saved.getName()),
+          () -> Assertions.assertEquals("Old Venue", saved.getVenue()));
+    }
 
-    UpdateEventCommand cmd = new UpdateEventCommand();
-    cmd.setEventId(eventId);
-    cmd.setName("New Name"); // should update
-    cmd.setVenue(null); // should remain unchanged
-    cmd.setStatus(EventStatusEnum.PUBLISHED);
+    @Test
+    @DisplayName("Should do nothing when event does not exist")
+    void deleteEvent_eventNotFound_noAction() {
 
-    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
-        .thenReturn(Optional.of(existingEvent));
+      // Arrange: identifiers and existing event
+      UUID organizerId = UUID.randomUUID();
+      UUID eventId = UUID.randomUUID();
 
-    // Simulate JPA behavior: save returns the same mutated entity
-    Mockito.when(eventRepository.save(Mockito.any(Event.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+      Event existingEvent = new Event();
+      existingEvent.setEventId(eventId);
+      existingEvent.setOrganizerId(organizerId);
 
-    // Act
-    Event result = eventCommandService.updateEventForOrganizer(organizerId, cmd);
+      Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+          .thenReturn(Optional.of(existingEvent));
 
-    // Assert: returned entity reflects selective updates
-    assertAll(
-        () -> Assertions.assertEquals("New Name", result.getName()),
-        () -> Assertions.assertEquals("Old Venue", result.getVenue()),
-        () -> Assertions.assertEquals(EventStatusEnum.PUBLISHED, result.getStatus()));
+      // Act
+      eventCommandService.deleteEventForOrganizer(organizerId, eventId);
 
-    // Assert: persisted intent
-    ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
-    Mockito.verify(eventRepository).save(captor.capture());
+      // Assert: lookup and delete are performed
+      Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
+      Mockito.verify(eventRepository).delete(existingEvent);
+    }
 
-    Event saved = captor.getValue();
+    @Test
+    void deleteEventForOrganizer_whenEventDoesNotExist_shouldDoNothing() {
 
-    assertAll(
-        () -> Assertions.assertEquals("New Name", saved.getName()),
-        () -> Assertions.assertEquals("Old Venue", saved.getVenue()));
-  }
+      // Arrange: no event found for given identifiers
+      UUID organizerId = UUID.randomUUID();
+      UUID eventId = UUID.randomUUID();
 
-  @Test
-  void deleteEventForOrganizer_whenEventExists_shouldDeleteEvent() {
+      Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
+          .thenReturn(Optional.empty());
 
-    // Arrange: identifiers and existing event
-    UUID organizerId = UUID.randomUUID();
-    UUID eventId = UUID.randomUUID();
+      // Act
+      eventCommandService.deleteEventForOrganizer(organizerId, eventId);
 
-    Event existingEvent = new Event();
-    existingEvent.setEventId(eventId);
-    existingEvent.setOrganizerId(organizerId);
-
-    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
-        .thenReturn(Optional.of(existingEvent));
-
-    // Act
-    eventCommandService.deleteEventForOrganizer(organizerId, eventId);
-
-    // Assert: lookup and delete are performed
-    Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
-    Mockito.verify(eventRepository).delete(existingEvent);
-  }
-
-  @Test
-  void deleteEventForOrganizer_whenEventDoesNotExist_shouldDoNothing() {
-
-    // Arrange: no event found for given identifiers
-    UUID organizerId = UUID.randomUUID();
-    UUID eventId = UUID.randomUUID();
-
-    Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
-        .thenReturn(Optional.empty());
-
-    // Act
-    eventCommandService.deleteEventForOrganizer(organizerId, eventId);
-
-    // Assert: lookup happens but delete is not attempted
-    Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
-    Mockito.verify(eventRepository, Mockito.never()).delete(Mockito.any());
+      // Assert: lookup happens but delete is not attempted
+      Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
+      Mockito.verify(eventRepository, Mockito.never()).delete(Mockito.any());
+    }
   }
 }
-
-
