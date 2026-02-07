@@ -2,6 +2,7 @@ package com.daroch.event.services.impl;
 
 import com.daroch.event.domain.entities.Event;
 import com.daroch.event.domain.enums.EventStatusEnum;
+import com.daroch.event.exceptions.EventNotFoundException;
 import com.daroch.event.repositories.EventRepository;
 import com.daroch.event.services.EventQueryService;
 import java.util.Optional;
@@ -67,21 +68,28 @@ public class EventQueryServiceImpl implements EventQueryService {
 
   // TODO: implement serch throught the published events
   // @Override
-  // public Page<Event> searchPublishedEvents(String query, Pageable pageable) {
+  // public Page<Event> searchPublishedEvents(String query, Pageable pageable)
+  // {
   //   return eventRepository.searchEvents(query, pageable);
   // }
 
   /**
-   * Retrieves a published event by its ID.
+   * Retrieves a published event by its unique identifier.
    *
-   * <p>This ensures that only events in PUBLISHED status are returned. If the event exists but is
-   * not published, the result will be empty.
+   * <p>This method enforces public visibility rules by returning only events that are in {@link
+   * EventStatusEnum#PUBLISHED} state.
    *
-   * @param eventId the UUID of the event to fetch
-   * @return an Optional containing the published event if found, otherwise empty
+   * <p>If no published event exists with the given ID, a {@link EventNotFoundException} is thrown.
+   *
+   * @param eventId unique identifier of the event to retrieve
+   * @return the published {@link Event}
+   * @throws EventNotFoundException if the event does not exist or is not published
    */
   @Override
-  public Optional<Event> getPublishedEvent(UUID eventId) {
-    return eventRepository.findByEventIdAndStatus(eventId, EventStatusEnum.PUBLISHED);
+  public Event getPublishedEvent(UUID eventId) {
+    return eventRepository
+        .findByEventIdAndStatus(eventId, EventStatusEnum.PUBLISHED)
+        .orElseThrow(
+            () -> new EventNotFoundException("Published event not found for id: " + eventId));
   }
 }

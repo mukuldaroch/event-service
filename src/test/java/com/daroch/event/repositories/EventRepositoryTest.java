@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,17 +20,6 @@ import org.springframework.data.domain.Pageable;
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 public class EventRepositoryTest {
-
-  // private Event createEvent(UUID organizerId, EventStatusEnum status) {
-  //   Event event = new Event();
-  //   event.setOrganizerId(organizerId);
-  //   event.setName("Desi Laudai");
-  //   event.setVenue("Naughty Ghaziabad");
-  //   event.setStatus(status);
-  //   event.setEventStartDate(LocalDateTime.of(1000, 1, 1, 1, 1));
-  //   event.setEventEndDate(LocalDateTime.of(1000, 1, 1, 1, 1));
-  //   return event;
-  // }
 
   // Injects the real JPA repository backed by H2 (not mocks)
   @Autowired private EventRepository eventRepository;
@@ -51,6 +41,11 @@ public class EventRepositoryTest {
     // Using very old dates to avoid "future date" constraints if any exist
     event.setEventStartDate(LocalDateTime.of(1000, 1, 1, 1, 1));
     event.setEventEndDate(LocalDateTime.of(1000, 1, 1, 1, 1));
+  }
+
+  @AfterEach
+  void cleanup() {
+    eventRepository.deleteAll();
   }
 
   /**

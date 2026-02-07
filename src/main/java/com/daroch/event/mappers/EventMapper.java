@@ -1,12 +1,13 @@
 package com.daroch.event.mappers;
 
 import com.daroch.event.domain.entities.Event;
+import com.daroch.event.dto.commands.CreateEventCommand;
+import com.daroch.event.dto.commands.UpdateEventCommand;
 import com.daroch.event.dto.request.CreateEventRequest;
 import com.daroch.event.dto.request.UpdateEventRequest;
 import com.daroch.event.dto.response.CreateEventResponse;
 import com.daroch.event.dto.response.EventResponse;
-import com.daroch.event.dto.commands.CreateEventCommand;
-import com.daroch.event.dto.commands.UpdateEventCommand;
+import com.daroch.event.dto.response.PublishedEventResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
@@ -44,4 +45,12 @@ public interface EventMapper {
    * @return UpdateEventCommand
    */
   UpdateEventCommand fromUpdateEventRequestDto(UpdateEventRequest dto);
+
+  /**
+   * converts Evnet Object to PublishedEventResponse Dto
+   *
+   * @param Event Object
+   * @return PublishedEventResponse Dto
+   */
+  PublishedEventResponse toPublishedEventResponseDto(Event event);
 }
