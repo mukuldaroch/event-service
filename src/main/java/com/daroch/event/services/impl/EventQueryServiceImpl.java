@@ -2,13 +2,19 @@ package com.daroch.event.services.impl;
 
 import com.daroch.event.domain.entities.Event;
 import com.daroch.event.domain.enums.EventStatusEnum;
+import com.daroch.event.dto.concrete.CachedEventPage;
 import com.daroch.event.exceptions.EventNotFoundException;
 import com.daroch.event.repositories.EventRepository;
 import com.daroch.event.services.EventQueryService;
+import com.daroch.event.services.RedisService;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class EventQueryServiceImpl implements EventQueryService {
 
   private final EventRepository eventRepository;
+  private final RedisService redisService;
 
   /**
    * Retrieves a single event belonging to a specific organizer.
@@ -52,26 +59,50 @@ public class EventQueryServiceImpl implements EventQueryService {
    */
   @Override
   public Page<Event> listPublishedEvents(Pageable pageable) {
-    return eventRepository.findByStatus(EventStatusEnum.PUBLISHED, pageable);
+    // cache key
+    String key =
+        "public_published_events:"
+            + "page="
+            + pageable.getPageNumber()
+            + ":size="
+            + pageable.getPageSize()
+            + ":sort="
+            + pageable.getSort();
+
+    // Try fetching cached page data
+    Optional<CachedEventPage> cached = redisService.get(key, CachedEventPage.class);
+
+    // Cache hit → reconstruct Spring Page and return
+    if (cached.isPresent()) {
+      CachedEventPage cachedPage = cached.get();
+
+      int pageSize = cachedPage.getPageSize();
+      if (pageSize < 1) {
+        // cache must never break pagination
+        pageSize = pageable.getPageSize();
+      }
+
+      return new PageImpl<>(
+          cachedPage.getContent(),
+          PageRequest.of(cachedPage.getPageNumber(), pageSize, pageable.getSort()),
+          cachedPage.getTotalElements());
+    }
+
+    // Cache miss → fetch from database
+    Page<Event> events = eventRepository.findByStatus(EventStatusEnum.PUBLISHED, pageable);
+
+    // Convert Page → cache-friendly DTO
+    CachedEventPage cacheable = new CachedEventPage();
+    cacheable.setContent(events.getContent());
+    cacheable.setPageNumber(events.getNumber());
+    cacheable.setPageSize(events.getSize());
+    cacheable.setTotalElements(events.getTotalElements());
+
+    // Store DTO in Redis
+    redisService.set(key, events, Duration.ofMinutes(10));
+
+    return events;
   }
-
-  /**
-   * Searches published events using a text-based query.
-   *
-   * <p>The search is delegated to the repository where full-text or LIKE-based search may be
-   * implemented, and only events that are published are returned.
-   *
-   * @param query the search keyword to match against event fields
-   * @param pageable pagination details for the result list
-   * @return a paginated list of search results within published events
-   */
-
-  // TODO: implement serch throught the published events
-  // @Override
-  // public Page<Event> searchPublishedEvents(String query, Pageable pageable)
-  // {
-  //   return eventRepository.searchEvents(query, pageable);
-  // }
 
   /**
    * Retrieves a published event by its unique identifier.
@@ -86,10 +117,46 @@ public class EventQueryServiceImpl implements EventQueryService {
    * @throws EventNotFoundException if the event does not exist or is not published
    */
   @Override
+  @Cacheable(value = "public-published-event", key = "#eventId")
   public Event getPublishedEvent(UUID eventId) {
-    return eventRepository
-        .findByEventIdAndStatus(eventId, EventStatusEnum.PUBLISHED)
-        .orElseThrow(
-            () -> new EventNotFoundException("Published event not found for id: " + eventId));
+
+    String key = "public_published_event_" + eventId;
+
+    // get the cached value
+    Optional<Event> cached = redisService.get(key, Event.class);
+
+    // if key is present
+    if (cached.isPresent()) {
+      return cached.get();
+    }
+
+    // if key is not present
+    Event event =
+        eventRepository
+            .findByEventIdAndStatus(eventId, EventStatusEnum.PUBLISHED)
+            .orElseThrow(
+                () -> new EventNotFoundException("Published event not found for id: " + eventId));
+
+    // set the key in redis
+    redisService.set(key, event, Duration.ofMinutes(10));
+
+    return event;
   }
+
+  // TODO: implement serch throught the published events
+  /**
+   * Searches published events using a text-based query.
+   *
+   * <p>The search is delegated to the repository where full-text or LIKE-based search may be
+   * implemented, and only events that are published are returned.
+   *
+   * @param query the search keyword to match against event fields
+   * @param pageable pagination details for the result list
+   * @return a paginated list of search results within published events
+   */
+  // @Override
+  // public Page<Event> searchPublishedEvents(String query, Pageable pageable)
+  // {
+  //   return eventRepository.searchEvents(query, pageable);
+  // }
 }
