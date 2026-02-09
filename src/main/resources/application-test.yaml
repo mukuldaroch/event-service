@@ -25,11 +25,3 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://auth.local:8080/realms/event-service
-  #
-  data:
-    redis:
-      host: redis
-      port: 6379
-      timeout: 1s
-  cache:
-    type: redis
