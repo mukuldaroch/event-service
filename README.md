@@ -47,8 +47,6 @@ Public Events
 | **GET** | `/events/published`            | List all published events   |
 | **GET** | `/events/published/{event_id}` | Get published event details |
 
-> ⚠️ **Work in progress:** These public event endpoints are not implemented yet. They will be added after Redis-based caching and public read models are introduced.
-
 ---
 
 ## Tech Stack
@@ -61,32 +59,34 @@ Public Events
 
 ---
 
-## Running Locally
+## Running Event Service Locally
 
-Requirements:
+## 1) Prerequisites
+
+You need:
 
 - Git
 - Java 17+
 - Gradle (wrapper included)
-- Docker & Docker Compose
+- Docker
 
-## 🧰 Required Tools Installation
+## 2) Install Required Tools
 
-### Arch based (pacman)
+### Arch-based (pacman)
 
 ```bash
 sudo pacman -Syu
 sudo pacman -S jdk17-openjdk gradle docker docker-compose postgresql pgcli
 ```
 
-Enable and start Docker:
+Enable Docker:
 
 ```bash
 sudo systemctl enable docker
 sudo systemctl start docker
 ```
 
-### Debian based (apt)
+### Debian-based (apt)
 
 ```bash
 sudo apt update
@@ -100,18 +100,22 @@ sudo systemctl enable docker
 sudo systemctl start docker
 ```
 
----
+## 3) Clone the Repository
 
 ```bash
-# Clone the repository
 git clone https://github.com/mukuldaroch/event-service.git
 cd event-service
 ```
 
-### Add auth.local to your hosts file
+## 4) Configure Local Hostname for Keycloak
 
-Keycloak is exposed using a custom hostname (`auth.local`).
-Add this to your system hosts file:
+Keycloak is exposed using a custom hostname:
+
+```
+auth.local
+```
+
+Edit your hosts file:
 
 ```bash
 sudo vim /etc/hosts
@@ -119,32 +123,57 @@ sudo vim /etc/hosts
 
 Add:
 
-```bash
+```
 127.0.0.1   auth.local
 ```
 
-This allows:
+Now Keycloak will be accessible at:
 
 ```
 http://auth.local:8080
 ```
 
-### Start PostgreSQL and Docker network
+## 5) Start Infrastructure (PostgreSQL + Network)
 
-Bring up the database and shared network:
+Start database and shared Docker network:
 
 ```bash
 docker compose up -d
 ```
 
-This will create:
+This creates:
 
-- `event-database` (Postgres)
+- `event-database` (PostgreSQL)
 - `event-mesh` (Docker network)
 
-### Run Keycloak
+## 6) Start Redis (Required for Caching / Future Features)
 
-Start Keycloak inside the same Docker network:
+Run Redis inside the same Docker network:
+
+```bash
+docker run -d \
+  --name redis \
+  --network event-mesh \
+  -p 6379:6379 \
+  redis:latest
+```
+
+Redis will be available at:
+
+```
+localhost:6379
+```
+
+If your Spring Boot app uses Redis, you’ll configure:
+
+```
+SPRING_REDIS_HOST=redis
+SPRING_REDIS_PORT=6379
+```
+
+## 7) Start Keycloak
+
+Run Keycloak in the same Docker network:
 
 ```bash
 docker run -d \
@@ -162,60 +191,59 @@ docker run -d \
   start-dev
 ```
 
-After this, Keycloak will be available at:
+Access Keycloak:
 
 ```
 http://auth.local:8080
 ```
 
-## 4) Keycloak Setup (Required)
+Login:
 
-After Keycloak starts, open:
-
-```bash
-http://auth.local:8080
+```
+Username: admin
+Password: admin
 ```
 
-**Login with:**
+## 8) Configure Keycloak
 
-- username: admin
-- password: admin
+### 8.1 Create Realm
 
-**Create Realm**
+```
+Realm Name: event-service
+```
 
-Realm name: event-service
+### 8.2 Create Client (Machine-to-Machine)
 
-**Create Client (API)**
-
+```
 Client ID: event-api
-Client type: OpenID Connect
+Client Type: OpenID Connect
+```
 
 Enable:
 
 ```
 Client authentication: ON
-Authorization:         OFF
-Standard flow:         OFF
-Direct access grants:  OFF
-Service accounts:      ON
+Authorization: OFF
+Standard flow: OFF
+Direct access grants: OFF
+Service accounts: ON
 ```
 
-This makes event-api a confidential machine-to-machine client.
+This makes it a confidential client.
 
-**Get Client Secret**
+### 8.3 Copy Client Secret
 
-Copy the Client Secret
-Put this value into your docker run:
+Get the **Client Secret** from:
 
-```bash
-# This is how your Event Service proves its identity to Keycloak.
--e keycloak.credentials.secret=YOUR_CREDENTIAL_SECRET_HERE
+```
+Clients → event-api → Credentials
 ```
 
-**Create Realm Roles**
+You’ll use this when running Event Service.
+
+### 8.4 Create Realm Roles
 
 Create:
-These map to how your system works.
 
 ```
 ORGANIZER
@@ -223,7 +251,7 @@ ATTENDEE
 STAFF
 ```
 
-**Create User**
+### 8.5 Create User
 
 Example:
 
@@ -233,58 +261,57 @@ Email verified: true
 Enabled: true
 ```
 
-## 5) Run `bash run.sh` to build automatically or build manually by following these steps if you are not on linux
+Assign roles as needed.
 
-### Build the Spring Boot JAR
+## 9) Build the Application
+
+If on Linux/macOS:
 
 ```bash
 ./gradlew clean build
 ```
 
-### Build and run the Event Service container
+## 10) Build and Run Event Service Container
 
-Remove any old container:
+Remove old container:
 
 ```bash
 docker rm -f event-service 2>/dev/null || true
+```
 
-# Build image:
+Build Docker image:
 
+```bash
 docker build -t event-service .
+```
 
-# Run the service:
+Run container:
 
+```bash
 docker run -d \
-    --name event-service \
-    --network event-mesh \
-    --add-host auth.local:host-gateway \
-    -p 8083:8083 \
-    -e SPRING_DATASOURCE_URL=jdbc:postgresql://event-database:5432/eventdb \
-    -e SPRING_DATASOURCE_USERNAME=postgres \
-    -e SPRING_DATASOURCE_PASSWORD=daroch \
-    -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth.local:8080/realms/event-service \
-    -e keycloak.client-id=event-api \
-    -e keycloak.credentials.secret=YOUR_CREDENTIAL_SECRET_HERE \
-    event-service
+  --name event-service \
+  --network event-mesh \
+  --add-host auth.local:host-gateway \
+  -p 8083:8083 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://event-database:5432/eventdb \
+  -e SPRING_DATASOURCE_USERNAME=postgres \
+  -e SPRING_DATASOURCE_PASSWORD=daroch \
+  -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://auth.local:8080/realms/event-service \
+  -e keycloak.client-id=event-api \
+  -e keycloak.credentials.secret=YOUR_CREDENTIAL_SECRET_HERE \
+  -e SPRING_REDIS_HOST=redis \
+  -e SPRING_REDIS_PORT=6379 \
+  event-service
 ```
 
-## 3. The service will be available at:
+## 11) Access Services
 
-```
-http://localhost:8083
-```
-
----
-
-## 🧭 Running Services Overview
-
-After completing the setup, the following services will be running locally:
-
-| Service       | Container Name   | Port                          | URL / Access                                     |
-| ------------- | ---------------- | ----------------------------- | ------------------------------------------------ |
-| Keycloak      | `keycloak`       | 8080                          | [http://auth.local:8080](http://auth.local:8080) |
-| Event Service | `event-service`  | 8083                          | [http://localhost:8083](http://localhost:8083)   |
-| PostgreSQL    | `event-database` | 5432 (internal) / 5433 (host) | localhost:5433                                   |
+| Service       | Container Name | Port                          | Access URL                                       |
+| ------------- | -------------- | ----------------------------- | ------------------------------------------------ |
+| Keycloak      | keycloak       | 8080                          | [http://auth.local:8080](http://auth.local:8080) |
+| Event Service | event-service  | 8083                          | [http://localhost:8083](http://localhost:8083)   |
+| PostgreSQL    | event-database | 5432 (internal) / 5433 (host) | localhost:5433                                   |
+| Redis         | redis          | 6379                          | localhost:6379                                   |
 
 ---
 
@@ -524,13 +551,11 @@ controllers/
   `POST /events`, `GET /events/{id}`, `PUT /events/{id}`
 
     It does:
-
     - JWT → User ID extraction
     - Request → DTO mapping
     - Delegates to services
 
     It **never**:
-
     - Talks to the database
     - Knows how entities are stored
     - Contains business rules

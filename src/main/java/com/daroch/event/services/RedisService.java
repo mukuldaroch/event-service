@@ -3,12 +3,15 @@ package com.daroch.event.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.Optional;
+
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@AllArgsConstructor
 public class RedisService {
 
   // RedisTemplate configured to store String keys and String (JSON) values
@@ -17,10 +20,6 @@ public class RedisService {
   // Shared ObjectMapper provided by Spring
   private final ObjectMapper objectMapper;
 
-  public RedisService(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper) {
-    this.redisTemplate = redisTemplate;
-    this.objectMapper = objectMapper;
-  }
 
   /**
    * <h>Fetches a value from Redis by key and converts JSON to the given class.
