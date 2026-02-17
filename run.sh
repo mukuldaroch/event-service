@@ -27,6 +27,8 @@ docker run -d \
     --network event-mesh \
     --add-host auth.local:host-gateway \
     -p 8083:8083 \
+    -e SPRING_REDIS_HOST=redis \
+    -e SPRING_REDIS_PORT=6379 \
     -e SPRING_DATASOURCE_URL=jdbc:postgresql://event-database:5432/eventdb \
     -e SPRING_DATASOURCE_USERNAME=postgres \
     -e SPRING_DATASOURCE_PASSWORD=daroch \

@@ -1,12 +1,12 @@
 package com.daroch.event.services.impl;
 
 import com.daroch.event.domain.entities.Event;
+import com.daroch.event.dto.commands.CreateEventCommand;
+import com.daroch.event.dto.commands.UpdateEventCommand;
 import com.daroch.event.exceptions.EventNotFoundException;
 import com.daroch.event.exceptions.EventUpdateException;
 import com.daroch.event.repositories.EventRepository;
 import com.daroch.event.services.EventCommandService;
-import com.daroch.event.dto.commands.CreateEventCommand;
-import com.daroch.event.dto.commands.UpdateEventCommand;
 import jakarta.transaction.Transactional;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,19 +72,20 @@ public class EventCommandServiceImpl implements EventCommandService {
    */
   @Override
   @Transactional
-  public Event updateEventForOrganizer(UUID organizerId, UpdateEventCommand cmd) {
+  public Event updateEventForOrganizer(UUID organizerId, UUID eventId, UpdateEventCommand cmd) {
 
-    if (cmd.getEventId() == null) {
+    if (organizerId == null) {
+      throw new EventUpdateException("organizer Id cannot be null");
+    }
+    if (eventId == null) {
       throw new EventUpdateException("Event ID cannot be null");
     }
 
     Event event =
         eventRepository
-            .findByEventIdAndOrganizerId(cmd.getEventId(), organizerId)
+            .findByEventIdAndOrganizerId(eventId, organizerId)
             .orElseThrow(
-                () ->
-                    new EventNotFoundException(
-                        "Event with id '" + cmd.getEventId() + "' does not exist"));
+                () -> new EventNotFoundException("Event with id '" + eventId + "' does not exist"));
 
     if (cmd.getName() != null) {
       event.setName(cmd.getName());
