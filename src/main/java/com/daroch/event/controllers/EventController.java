@@ -1,6 +1,8 @@
 package com.daroch.event.controllers;
 
 import com.daroch.event.domain.entities.Event;
+import com.daroch.event.dto.commands.CreateEventCommand;
+import com.daroch.event.dto.commands.UpdateEventCommand;
 import com.daroch.event.dto.request.CreateEventRequest;
 import com.daroch.event.dto.request.UpdateEventRequest;
 import com.daroch.event.dto.response.CreateEventResponse;
@@ -8,8 +10,6 @@ import com.daroch.event.dto.response.EventResponse;
 import com.daroch.event.mappers.EventMapper;
 import com.daroch.event.services.EventCommandService;
 import com.daroch.event.services.EventQueryService;
-import com.daroch.event.dto.commands.CreateEventCommand;
-import com.daroch.event.dto.commands.UpdateEventCommand;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -105,7 +105,9 @@ public class EventController {
    */
   @PatchMapping("/{eventId}")
   public ResponseEntity<EventResponse> updateEvent(
-      @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UpdateEventRequest updateEventRequest) {
+      @PathVariable UUID eventId,
+      @AuthenticationPrincipal Jwt jwt,
+      @Valid @RequestBody UpdateEventRequest updateEventRequest) {
 
     // Convert DTO → domain model for service layer
     UpdateEventCommand updateEventCommand =
@@ -115,7 +117,8 @@ public class EventController {
     UUID userId = parseUserId(jwt);
 
     // Delegate update logic to the service
-    Event updatedEvent = eventCommandService.updateEventForOrganizer(userId, updateEventCommand);
+    Event updatedEvent =
+        eventCommandService.updateEventForOrganizer(userId, eventId, updateEventCommand);
 
     // Convert the updated entity → response DTO
     EventResponse updateEventResponseDto = eventMapper.toEventResponseDto(updatedEvent);

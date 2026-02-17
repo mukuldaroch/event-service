@@ -97,11 +97,12 @@ class EventCommandServiceImplTest {
       // Arrange
       UpdateEventCommand cmd = new UpdateEventCommand();
       UUID organizerId = UUID.randomUUID();
+      UUID eventId = null;
 
       // Act + Assert
       assertThrows(
           EventUpdateException.class,
-          () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
+          () -> eventCommandService.updateEventForOrganizer(organizerId, eventId, cmd));
 
       // Repository must not be touched on validation failure
       Mockito.verifyNoInteractions(eventRepository);
@@ -116,7 +117,6 @@ class EventCommandServiceImplTest {
       UUID eventId = UUID.randomUUID();
 
       UpdateEventCommand cmd = new UpdateEventCommand();
-      cmd.setEventId(eventId);
 
       Mockito.when(eventRepository.findByEventIdAndOrganizerId(eventId, organizerId))
           .thenReturn(Optional.empty());
@@ -124,7 +124,7 @@ class EventCommandServiceImplTest {
       // Act + Assert
       assertThrows(
           EventNotFoundException.class,
-          () -> eventCommandService.updateEventForOrganizer(organizerId, cmd));
+          () -> eventCommandService.updateEventForOrganizer(organizerId, eventId, cmd));
 
       // Ensure no save attempt is made
       Mockito.verify(eventRepository).findByEventIdAndOrganizerId(eventId, organizerId);
@@ -146,7 +146,6 @@ class EventCommandServiceImplTest {
       existingEvent.setStatus(EventStatusEnum.DRAFT);
 
       UpdateEventCommand cmd = new UpdateEventCommand();
-      cmd.setEventId(eventId);
       cmd.setName("New Name"); // should update
       cmd.setVenue(null); // should remain unchanged
       cmd.setStatus(EventStatusEnum.PUBLISHED);
@@ -159,7 +158,7 @@ class EventCommandServiceImplTest {
           .thenAnswer(invocation -> invocation.getArgument(0));
 
       // Act
-      Event result = eventCommandService.updateEventForOrganizer(organizerId, cmd);
+      Event result = eventCommandService.updateEventForOrganizer(organizerId, eventId, cmd);
 
       // Assert: returned entity reflects selective updates
       assertAll(

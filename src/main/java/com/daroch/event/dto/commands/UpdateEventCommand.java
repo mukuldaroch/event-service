@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateEventCommand {
 
-  private UUID eventId;
   private String name;
   private String venue;
   private EventStatusEnum status;
