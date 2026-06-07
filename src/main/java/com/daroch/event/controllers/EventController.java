@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(path = "/events")
+@RequestMapping(path = "/event")
 @RequiredArgsConstructor
 public class EventController {
 
@@ -85,14 +85,9 @@ public class EventController {
 
     UUID organizerId = parseUserId(jwt);
 
-    // Find the event for the given organizer
-    return eventQueryService
-        .getEventForOrganizer(organizerId, eventId)
-        .map(eventMapper::toEventResponseDto)
-        .map(ResponseEntity::ok) // wrap in 200 OK
-        .orElse(ResponseEntity.notFound().build()); // else return 404
+    EventResponse response = eventQueryService.getEventForOrganizer(organizerId, eventId);
 
-    // .build() means no body, only status + headers
+    return ResponseEntity.ok(response);
   }
 
   /**

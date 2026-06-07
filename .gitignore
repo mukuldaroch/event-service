@@ -1,6 +1,6 @@
- =====================
- Maven & Build Files
- =====================
+# =====================
+# Maven & Build Files
+# =====================
 arget/
 .jar
 .war
@@ -10,54 +10,56 @@ arget/
 .tmp
 .bak
 
- =====================
- Eclipse Files
- =====================
+# =====================
+# Eclipse Files
+# =====================
 classpath
 project
 settings/
 factorypath
 
- =====================
- IntelliJ IDEA Files
- =====================
+# =====================
+# IntelliJ IDEA Files
+# =====================
 idea/
 .iml
 .iws
 ut/
 
- =====================
- OS Generated Files
- =====================
+# =====================
+# OS Generated Files
+# =====================
 DS_Store
 humbs.db
 
- =====================
- Logs & Temp
- =====================
+# =====================
+# Logs & Temp
+# =====================
 ogs/
 .log
 .swp
 .swo
 
- =====================
- Environment Files
- =====================
+# =====================
+# Environment Files
+# =====================
 env
 env.local
 .properties.local
 
- =====================
- Backup Files
- =====================
+# =====================
+# Backup Files
+# =====================
 ~
 .backup
 .bak
 .old
 
- =====================
- Others
- =====================
+# =====================
+# Maven & Build Files
+#=====================
+Others
+=====================
 mvn/wrapper/maven-wrapper.jar
 ackup.md
 rojectBrief.md

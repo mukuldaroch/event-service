@@ -3,7 +3,9 @@ package com.daroch.event.services.impl;
 import com.daroch.event.domain.entities.Event;
 import com.daroch.event.domain.enums.EventStatusEnum;
 import com.daroch.event.dto.concrete.CachedEventPage;
+import com.daroch.event.dto.response.EventResponse;
 import com.daroch.event.exceptions.EventNotFoundException;
+import com.daroch.event.mappers.EventMapper;
 import com.daroch.event.repositories.EventRepository;
 import com.daroch.event.services.EventQueryService;
 import com.daroch.event.services.RedisService;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 public class EventQueryServiceImpl implements EventQueryService {
 
   private final EventRepository eventRepository;
+  private final EventMapper eventMapper;
   private final RedisService redisService;
 
   /**
@@ -33,8 +36,16 @@ public class EventQueryServiceImpl implements EventQueryService {
    * @return an Optional containing the Event if found and owned by the organizer, otherwise empty
    */
   @Override
-  public Optional<Event> getEventForOrganizer(UUID organizerId, UUID eventId) {
-    return eventRepository.findByEventIdAndOrganizerId(eventId, organizerId);
+  public EventResponse getEventForOrganizer(UUID organizerId, UUID eventId) {
+
+    Event event =
+        eventRepository
+            .findByEventIdAndOrganizerId(eventId, organizerId)
+            .orElseThrow(EventNotFoundException::new);
+
+    EventResponse eventResponse = eventMapper.toEventResponseDto(event);
+
+    return eventResponse;
   }
 
   /**
@@ -99,7 +110,7 @@ public class EventQueryServiceImpl implements EventQueryService {
     cacheable.setTotalElements(events.getTotalElements());
 
     // Store DTO in Redis
-    redisService.set(key, events, Duration.ofMinutes(10));
+    redisService.set(key, cacheable, Duration.ofMinutes(10));
 
     return events;
   }
@@ -134,8 +145,7 @@ public class EventQueryServiceImpl implements EventQueryService {
     Event event =
         eventRepository
             .findByEventIdAndStatus(eventId, EventStatusEnum.PUBLISHED)
-            .orElseThrow(
-                () -> new EventNotFoundException("Published event not found for id: " + eventId));
+            .orElseThrow(() -> new EventNotFoundException());
 
     // set the key in redis
     redisService.set(key, event, Duration.ofMinutes(10));

@@ -2,7 +2,6 @@ package com.daroch.event.dto.request;
 
 import com.daroch.event.domain.enums.EventStatusEnum;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -84,8 +84,7 @@ public class EventCommandServiceImpl implements EventCommandService {
     Event event =
         eventRepository
             .findByEventIdAndOrganizerId(eventId, organizerId)
-            .orElseThrow(
-                () -> new EventNotFoundException("Event with id '" + eventId + "' does not exist"));
+            .orElseThrow(() -> new EventNotFoundException());
 
     if (cmd.getName() != null) {
       event.setName(cmd.getName());
