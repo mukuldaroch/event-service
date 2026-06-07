@@ -1,18 +1,18 @@
 package com.daroch.event.controllers;
 
-import com.daroch.event.dto.ErrorDto;
-import com.daroch.event.exceptions.EventNotFoundException;
+import com.daroch.event.dto.response.ErrorResponse;
+import com.daroch.event.exceptions.BusinessException;
 import com.daroch.event.exceptions.EventUpdateException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
-import java.util.List;
+import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 // Tells Spring this class will globally handle exceptions for REST controllers
@@ -26,13 +26,21 @@ public class GlobalExceptionHandler {
    * @return an error response with HTTP 400
    */
   @ExceptionHandler(EventUpdateException.class)
-  public ResponseEntity<ErrorDto> handleEventUpdateException(EventUpdateException ex) {
+  public ResponseEntity<ErrorResponse> handleEventUpdateException(
+      EventUpdateException ex, HttpServletRequest request) {
+
     log.error("Caught EventUpdateException", ex);
 
-    ErrorDto errorDto = new ErrorDto();
-    errorDto.setError("Unable to update event");
+    ErrorResponse errorResponse =
+        ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .errorCode("EVENT_UPDATE_FAILED")
+            .message("Unable to update event")
+            .path(request.getRequestURI())
+            .build();
 
-    return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
   }
 
   /**
@@ -41,14 +49,22 @@ public class GlobalExceptionHandler {
    * @param ex the exception indicating the event was not found
    * @return an error response with HTTP 400
    */
-  @ExceptionHandler(EventNotFoundException.class)
-  public ResponseEntity<ErrorDto> handleEventNotFoundException(EventNotFoundException ex) {
-    log.error("Caught EventNotFoundException", ex);
+  @ExceptionHandler(BusinessException.class)
+  public ResponseEntity<ErrorResponse> handleBusinessException(
+      BusinessException ex, HttpServletRequest request) {
 
-    ErrorDto errorDto = new ErrorDto();
-    errorDto.setError("Event not found");
+    log.error("Caught BusinessException", ex);
 
-    return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    ErrorResponse errorResponse =
+        ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(ex.getStatus().value())
+            .errorCode(ex.getErrorCode())
+            .message(ex.getMessage())
+            .path(request.getRequestURI())
+            .build();
+
+    return ResponseEntity.status(ex.getStatus()).body(errorResponse);
   }
 
   /**
@@ -58,23 +74,27 @@ public class GlobalExceptionHandler {
    * @return an error response with HTTP 400
    */
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorDto> handleMethodArgumentNotValidException(
-      MethodArgumentNotValidException ex) {
+  public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
+      MethodArgumentNotValidException ex, HttpServletRequest request) {
+
     log.error("Caught MethodArgumentNotValidException", ex);
 
-    ErrorDto errorDto = new ErrorDto();
-
-    BindingResult bindingResult = ex.getBindingResult();
-    List<FieldError> fieldErrors = bindingResult.getFieldErrors();
-
     String errorMessage =
-        fieldErrors.stream()
+        ex.getBindingResult().getFieldErrors().stream()
             .findFirst()
-            .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
-            .orElse("Validation error occurred");
+            .map(error -> error.getField() + ": " + error.getDefaultMessage())
+            .orElse("Validation failed");
 
-    errorDto.setError(errorMessage);
-    return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    ErrorResponse errorResponse =
+        ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .errorCode("VALIDATION_ERROR")
+            .message(errorMessage)
+            .path(request.getRequestURI())
+            .build();
+
+    return ResponseEntity.badRequest().body(errorResponse);
   }
 
   /**
@@ -84,19 +104,51 @@ public class GlobalExceptionHandler {
    * @return an error response with HTTP 400
    */
   @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<ErrorDto> handleConstraintViolation(ConstraintViolationException ex) {
-    log.error("Caught ConstraintViolationException", ex);
+  public ResponseEntity<ErrorResponse> handleConstraintViolation(
+      ConstraintViolationException ex, HttpServletRequest request) {
 
-    ErrorDto errorDto = new ErrorDto();
+    log.error("Caught ConstraintViolationException", ex);
 
     String errorMessage =
         ex.getConstraintViolations().stream()
             .findFirst()
-            .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+            .map(v -> v.getPropertyPath() + ": " + v.getMessage())
             .orElse("Constraint violation occurred");
 
-    errorDto.setError(errorMessage);
-    return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    ErrorResponse errorResponse =
+        ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .errorCode("CONSTRAINT_VIOLATION")
+            .message(errorMessage)
+            .path(request.getRequestURI())
+            .build();
+
+    return ResponseEntity.badRequest().body(errorResponse);
+  }
+
+  /**
+   * Handles requests to non-existent endpoints.
+   *
+   * @param ex the exception indicating no matching endpoint/resource exists
+   * @return an error response with HTTP 404
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNoResourceFoundException(
+      NoResourceFoundException ex, HttpServletRequest request) {
+
+    log.warn("No endpoint found: {}", request.getRequestURI());
+
+    ErrorResponse errorResponse =
+        ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.NOT_FOUND.value())
+            .errorCode("ENDPOINT_NOT_FOUND")
+            .message("Endpoint not found")
+            .path(request.getRequestURI())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
   }
 
   /**
@@ -106,12 +158,19 @@ public class GlobalExceptionHandler {
    * @return an error response with HTTP 500
    */
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorDto> handleException(Exception ex) {
-    log.error("Caught exception", ex);
+  public ResponseEntity<ErrorResponse> handleException(Exception ex, HttpServletRequest request) {
 
-    ErrorDto errorDto = new ErrorDto();
-    errorDto.setError("An unknown error occurred");
+    log.error("Caught unexpected exception", ex);
 
-    return new ResponseEntity<>(errorDto, HttpStatus.INTERNAL_SERVER_ERROR);
+    ErrorResponse errorResponse =
+        ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .errorCode("INTERNAL_SERVER_ERROR")
+            .message("An unexpected error occurred")
+            .path(request.getRequestURI())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
   }
 }

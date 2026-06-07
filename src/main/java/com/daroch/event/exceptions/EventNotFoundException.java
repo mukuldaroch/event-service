@@ -1,30 +1,10 @@
 package com.daroch.event.exceptions;
 
-public class EventNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
-  // No-arg constructor
+public class EventNotFoundException extends BusinessException {
+
   public EventNotFoundException() {
-    super();
-  }
-
-  // Constructor with message
-  public EventNotFoundException(String message) {
-    super(message);
-  }
-
-  // Constructor with message and cause
-  public EventNotFoundException(String message, Throwable cause) {
-    super(message, cause);
-  }
-
-  // Constructor with cause only
-  public EventNotFoundException(Throwable cause) {
-    super(cause);
-  }
-
-  // Full constructor
-  public EventNotFoundException(
-      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
+    super("EVENT_NOT_FOUND", "Event not found", HttpStatus.NOT_FOUND);
   }
 }

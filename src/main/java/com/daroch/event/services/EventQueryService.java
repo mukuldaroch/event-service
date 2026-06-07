@@ -1,14 +1,14 @@
 package com.daroch.event.services;
 
 import com.daroch.event.domain.entities.Event;
-import java.util.Optional;
+import com.daroch.event.dto.response.EventResponse;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface EventQueryService {
 
-  Optional<Event> getEventForOrganizer(UUID organizerId, UUID eventId);
+  EventResponse getEventForOrganizer(UUID organizerId, UUID eventId);
 
   Page<Event> listEventsForOrganizer(UUID organizerId, Pageable pageable);
 

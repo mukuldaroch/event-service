@@ -9,7 +9,7 @@ services:
       - "5433:5432"
     networks:
       - event-mesh
-    restart: always
+    restart: "no"
     environment:
       POSTGRES_USER: postgres # Default PostgreSQL user
       POSTGRES_PASSWORD: daroch # Password for the default user
